@@ -90,11 +90,10 @@ class HTTPClient(object):
 
     def GET(self, url, args=None):
         [host, port, path] = self.get_host_port(url)
-        agent = "User-Agent: curl/7.64.1\r\n"
         accept = "Accept: */*\r\n"
-        connection = "Conntection: close\r\n"
-        payload = "GET" + path + "HTTP/1.1" + agent + \
-            "Host:" + host + accept + connection
+        connection = "Connection: close\r\n\r\n"
+        payload = "GET" + " " + path + " " + "HTTP/1.1\r\n" + \
+            "Host:" + host + "\r\n" + accept + connection
         self.connect(host, port)
         self.sendall(payload)
         content = self.recvall(self.socket)
@@ -106,19 +105,19 @@ class HTTPClient(object):
     def POST(self, url, args=None):
         [host, port, path] = self.get_host_port(url)
         agent = "User-Agent: curl/7.64.1\r\n"
-        accept = "Accept: */*\r\n"
+
         content_type = "Content-Type: application/json/x-www-form-urlencoded\r\n"
         connection = "Conntection: close\r\n"
         if args:
             message = urllib.parse.urlparse(args)
             content_length = "Content-length: " + str(len(message)) + "\r\n"
-            payload = "POST" + path + "HTTP/1.1\r\n" + agent + "Host:" + host + "\r\n" + \
+            payload = "POST" + " " + " " + path + "HTTP/1.1\r\n" + agent + "Host:" + host + "\r\n" + \
                 content_length + content_type + connection + \
                 "\r\n" + urllib.parse.urlencode(args)
         else:
             content_length = "Content-length: " + str(0) + "\r\n"
-            payload = "POST" + path + "HTTP/1.1\r\n" + agent + "Host:" + \
-                host + "\r\n" + content_length+content_type+connection+"\r\n"
+            payload = "POST" + " " + path + " " + "HTTP/1.1\r\n" + agent + "Host:" + \
+                host + "\r\n" + content_length + content_type + connection + "\r\n"
         try:
             self.connect(host, port)
             self.sendall(payload)
