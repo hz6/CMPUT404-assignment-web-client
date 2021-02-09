@@ -89,13 +89,47 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        [host, port, path] = self.get_host_port(url)
+        agent = "User-Agent: curl/7.64.1\r\n"
+        accept = "Accept: */*\r\n"
+        connection = "Conntection: close\r\n"
+        payload = "GET" + path + "HTTP/1.1" + agent + \
+            "Host:" + host + accept + connection
+        self.connect(host, port)
+        self.sendall(payload)
+        content = self.recvall(self.socket)
+        self.close()
+        code = self.get_code(content)
+        body = self.get_body(content)
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        [host, port, path] = self.get_host_port(url)
+        agent = "User-Agent: curl/7.64.1\r\n"
+        accept = "Accept: */*\r\n"
+        content_type = "Content-Type: application/json/x-www-form-urlencoded\r\n"
+        connection = "Conntection: close\r\n"
+        if args:
+            message = urllib.parse.urlparse(args)
+            content_length = "Content-length: " + str(len(message)) + "\r\n"
+            payload = "POST" + path + "HTTP/1.1\r\n" + agent + "Host:" + host + "\r\n" + \
+                content_length + content_type + connection + \
+                "\r\n" + urllib.parse.urlencode(args)
+        else:
+            content_length = "Content-length: " + str(0) + "\r\n"
+            payload = "POST" + path + "HTTP/1.1\r\n" + agent + "Host:" + \
+                host + "\r\n" + content_length+content_type+connection+"\r\n"
+        try:
+            self.connect(host, port)
+            self.sendall(payload)
+            content = self.recvall(self.socket)
+            self.close()
+            code = self.get_code(content)
+            body = self.get_body(content)
+        except:
+            code = 404
+            body = None
+
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
