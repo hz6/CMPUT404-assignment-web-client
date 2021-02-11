@@ -38,20 +38,26 @@ class HTTPResponse(object):
 class HTTPClient(object):
 
     def get_host_port(self, url):
-        [port, hostname, path] = [0, "localhost", "/"]
-        if urllib.parse.urlparse(url).port:
-            port = urllib.parse.urlparse(url).port
-        else:
-            port = 80
-        if urllib.parse.urlparse(url).hostname:
-            hostname = urllib.parse.urlparse(url).hostname
-        else:
-            hostname = "localhost"
-        if urllib.parse.urlparse(url).path:
+        [path, host, port] = ["/", "127.0.0.1", 0]
+
+        if urllib.parse.urlparse(url).path != "":
+            # print(urllib.parse.urlparse(url).path)
             path = urllib.parse.urlparse(url).path
         else:
             path = "/"
-        return [hostname, port, path]
+
+        if urllib.parse.urlparse(url).hostname != None:
+            # print(urllib.parse.urlparse(url).hostname)
+            host = urllib.parse.urlparse(url).hostname
+        else:
+            host = "127.0.0.1"
+
+        if urllib.parse.urlparse(url).port != None:
+            # print(urllib.parse.urlparse(url).port)
+            port = urllib.parse.urlparse(url).port
+        else:
+            port = 80
+        return [path, host, port]
 
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -89,35 +95,33 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        [host, port, path] = self.get_host_port(url)
-        accept = "Accept: */*\r\n"
+        [path, host, port] = self.get_host_port(url)
         connection = "Connection: close\r\n\r\n"
         payload = "GET" + " " + path + " " + "HTTP/1.1\r\n" + \
-            "Host:" + host + "\r\n" + accept + connection
+            "Host:" + host + "\r\n" + connection
         self.connect(host, port)
         self.sendall(payload)
         content = self.recvall(self.socket)
-        self.close()
         code = self.get_code(content)
         body = self.get_body(content)
+        self.close()
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        [host, port, path] = self.get_host_port(url)
-        agent = "User-Agent: curl/7.64.1\r\n"
-
-        content_type = "Content-Type: application/json/x-www-form-urlencoded\r\n"
+        [path, host, port] = self.get_host_port(url)
         connection = "Conntection: close\r\n"
-        if args:
-            message = urllib.parse.urlparse(args)
-            content_length = "Content-length: " + str(len(message)) + "\r\n"
-            payload = "POST" + " " + " " + path + "HTTP/1.1\r\n" + agent + "Host:" + host + "\r\n" + \
-                content_length + content_type + connection + \
-                "\r\n" + urllib.parse.urlencode(args)
-        else:
+
+        if args == None:
             content_length = "Content-length: " + str(0) + "\r\n"
-            payload = "POST" + " " + path + " " + "HTTP/1.1\r\n" + agent + "Host:" + \
-                host + "\r\n" + content_length + content_type + connection + "\r\n"
+            payload = "POST" + " " + path + " " + "HTTP/1.1\r\n" + "Host:" + host + "\r\n" + \
+                content_length + connection + "\r\n"
+        else:
+            message = urllib.parse.urlencode(args)
+            content_length = "Content-length: " + str(len(message)) + "\r\n"
+            payload = "POST" + " " + path + " " + "HTTP/1.1\r\n" + "Host:" + host + "\r\n" + \
+                content_length + connection + \
+                "\r\n"+urllib.parse.urlencode(args)
+
         try:
             self.connect(host, port)
             self.sendall(payload)
@@ -125,6 +129,7 @@ class HTTPClient(object):
             self.close()
             code = self.get_code(content)
             body = self.get_body(content)
+
         except:
             code = 404
             body = None
