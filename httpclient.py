@@ -38,7 +38,7 @@ class HTTPResponse(object):
 class HTTPClient(object):
 
     def get_host_port(self, url):
-        [path, host, port] = ["/", "127.0.0.1", 0]
+        [path, host, port] = ["/", "http://127.0.0.1", 0]
 
         if urllib.parse.urlparse(url).path != "":
             # print(urllib.parse.urlparse(url).path)
@@ -50,7 +50,7 @@ class HTTPClient(object):
             # print(urllib.parse.urlparse(url).hostname)
             host = urllib.parse.urlparse(url).hostname
         else:
-            host = "127.0.0.1"
+            host = "http://127.0.0.1"
 
         if urllib.parse.urlparse(url).port != None:
             # print(urllib.parse.urlparse(url).port)
@@ -109,7 +109,9 @@ class HTTPClient(object):
 
     def POST(self, url, args=None):
         [path, host, port] = self.get_host_port(url)
-        connection = "Conntection: close\r\n"
+        connection = "Conntection: close \r\n"
+        content_length = "Content-length: 0 \r\n"
+        payload = ""
 
         if args == None:
             content_length = "Content-length: " + str(0) + "\r\n"
@@ -120,19 +122,20 @@ class HTTPClient(object):
             content_length = "Content-length: " + str(len(message)) + "\r\n"
             payload = "POST" + " " + path + " " + "HTTP/1.1\r\n" + "Host:" + host + "\r\n" + \
                 content_length + connection + \
-                "\r\n"+urllib.parse.urlencode(args)
+                "\r\n" + urllib.parse.urlencode(args)
 
         try:
             self.connect(host, port)
             self.sendall(payload)
             content = self.recvall(self.socket)
-            self.close()
             code = self.get_code(content)
             body = self.get_body(content)
 
         except:
             code = 404
             body = None
+
+        self.close()
 
         return HTTPResponse(code, body)
 
